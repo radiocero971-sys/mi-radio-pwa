@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radio Cero 97.1 - En Vivo</title>
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+    <!-- Font Awesome 6 Free -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- PWA essentials -->
+    <meta name="theme-color" content="#212529">
+    <link rel="manifest" href="manifest.json">
+
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: #121212;
+        }
+        main {
+            flex: 1;
+        }
+        .player-footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: rgba(33, 37, 41, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+        }
+        #nowPlaying { max-width: 200px; }
+        @media (max-width: 576px) {
+            #nowPlaying { max-width: 120px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="#">
+                <i class="fas fa-radio me-2"></i>Radio Cero 97.1
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link active" href="#">En Vivo</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">Programación</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">Nosotros</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">Contacto</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido principal -->
+    <main class="container my-5 pt-5">
+        <div class="text-center">
+            <h1 class="display-4 fw-bold mb-3">Radio Cero 97.1</h1>
+            <p class="lead mb-5">Tu música favorita, siempre con vos.</p>
+
+            <div class="card bg-dark border-secondary mx-auto" style="max-width: 500px;">
+                <div class="card-body p-5 text-center">
+                    <i class="fas fa-broadcast-tower fa-5x text-primary mb-4"></i>
+                    <h3>En vivo las 24 horas</h3>
+                    <p>Usa el reproductor en la barra inferior para escuchar.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Reproductor fijo -->
+    <footer class="player-footer py-3 border-top border-secondary">
+        <div class="container d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center flex-grow-1 me-3 text-truncate">
+                <i class="fas fa-music fa-2x text-primary me-3"></i>
+                <div class="text-truncate">
+                    <small class="text-muted d-block" id="statusText">Listo</small>
+                    <strong class="text-truncate" id="nowPlaying">Radio Cero 97.1</strong>
+                </div>
+            </div>
+
+            <button class="btn btn-primary btn-lg rounded-circle shadow mx-3" id="playPauseBtn">
+                <i class="fas fa-play fa-2x" id="playIcon"></i>
+            </button>
+
+            <div class="d-flex align-items-center">
+                <i class="fas fa-volume-up me-2"></i>
+                <input type="range" class="form-range" id="volumeSlider" min="0" max="1" step="0.01" value="0.7" style="width: 100px;">
+            </div>
+        </div>
+    </footer>
+
+    <!-- Audio oculto -->
+    <audio id="radioStream" preload="none">
+        <source src="https://stream.zeno.fm/r7s13r8rqwzuv" type="audio/mpeg">
+        <source src="https://stream.zeno.fm/r7s13r8rqwzuv" type="audio/aac">
+    </audio>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+    <!-- Reproductor JavaScript -->
+    <script>
+        const audio = document.getElementById('radioStream');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const playIcon = document.getElementById('playIcon');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const nowPlaying = document.getElementById('nowPlaying');
+        const statusText = document.getElementById('statusText');
+
+        const MOUNT_ID = 'r7s13r8rqwzuv';
+        const METADATA_API = `https://api.zeno.fm/mounts/metadata/subscribe/${MOUNT_ID}`;
+
+        // Volumen inicial
+        audio.volume = volumeSlider.value;
+
+        // Play/Pause
+        playPauseBtn.addEventListener('click', () => {
+            if (audio.paused) {
+                audio.play().catch(e => {
+                    console.error(e);
+                    statusText.textContent = 'Error al conectar';
+                });
+            } else {
+                audio.pause();
+            }
+        });
+
+        // Eventos de estado
+        audio.addEventListener('play', () => {
+            playIcon.classList.replace('fa-play', 'fa-pause');
+            statusText.textContent = 'En Vivo';
+        });
+        audio.addEventListener('pause', () => {
+            playIcon.classList.replace('fa-pause', 'fa-play');
+            statusText.textContent = 'Pausado';
+        });
+        audio.addEventListener('waiting', () => statusText.textContent = 'Conectando...');
+
+        // Volumen
+        volumeSlider.addEventListener('input', () => audio.volume = volumeSlider.value);
+
+        // Metadata en tiempo real
+        function connectMetadata() {
+            const es = new EventSource(METADATA_API);
+            es.onmessage = e => {
+                try {
+                    const data = JSON.parse(e.data);
+                    nowPlaying.textContent = data.currentTrack || 'Radio Cero 97.1';
+                } catch (err) {
+                    nowPlaying.textContent = 'Radio Cero 97.1';
+                }
+            };
+            es.onerror = () => {
+                es.close();
+                setTimeout(connectMetadata, 10000);
+            };
+        }
+        connectMetadata();
+    </script>
+</body>
+</html>
