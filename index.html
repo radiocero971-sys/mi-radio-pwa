@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-bs-theme="dark">
+< lang="es" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,13 +17,24 @@
 
     <style>
         body {
+            position: relative;
+            background: #000; /* fallback negro */
+            overflow: hidden;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            background: #121212;
+        }
+        #bgCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
         }
         main {
             flex: 1;
+            position: relative;
         }
         .player-footer {
             position: fixed;
@@ -40,6 +51,9 @@
     </style>
 </head>
 <body>
+
+    <!-- Canvas para el fondo con imagen editada -->
+    <canvas id="bgCanvas"></canvas>
 
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
@@ -120,10 +134,8 @@
         const MOUNT_ID = 'r7s13r8rqwzuv';
         const METADATA_API = `https://api.zeno.fm/mounts/metadata/subscribe/${MOUNT_ID}`;
 
-        // Volumen inicial
         audio.volume = volumeSlider.value;
 
-        // Play/Pause
         playPauseBtn.addEventListener('click', () => {
             if (audio.paused) {
                 audio.play().catch(e => {
@@ -135,7 +147,6 @@
             }
         });
 
-        // Eventos de estado
         audio.addEventListener('play', () => {
             playIcon.classList.replace('fa-play', 'fa-pause');
             statusText.textContent = 'En Vivo';
@@ -146,10 +157,8 @@
         });
         audio.addEventListener('waiting', () => statusText.textContent = 'Conectando...');
 
-        // Volumen
         volumeSlider.addEventListener('input', () => audio.volume = volumeSlider.value);
 
-        // Metadata en tiempo real
         function connectMetadata() {
             const es = new EventSource(METADATA_API);
             es.onmessage = e => {
@@ -167,5 +176,51 @@
         }
         connectMetadata();
     </script>
+
+    <!-- Fondo con Canvas (imagen local) -->
+    <script>
+        const canvas = document.getElementById('bgCanvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+
+        // Ruta relativa correcta dentro del proyecto (nota la carpeta "asset" sin "s")
+        img.src = 'asset/images/fondo.jpg';
+
+        function drawBackground() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const ratio = Math.max(canvas.width / img.width, canvas.height / img.height);
+            const w = img.width * ratio;
+            const h = img.height * ratio;
+            const x = (canvas.width - w) / 2;
+            const y = (canvas.height - h) / 2;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, x, y, w, h);
+
+            // Blur sutil + overlay oscuro para mejor legibilidad
+            ctx.filter = 'blur(5px)';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        img.onload = () => {
+            console.log('✅ Fondo cargado correctamente');
+            drawBackground();
+            window.addEventListener('resize', drawBackground);
+        };
+
+        img.onerror = () => {
+            console.error('❌ No se pudo cargar la imagen. Verificá la ruta: asset/images/fondo.jpg');
+            document.body.style.background = '#000';
+            canvas.style.display = 'none';
+        };
+
+        window.addEventListener('resize', () => {
+            if (img.complete && img.naturalWidth !== 0) {
+                drawBackground();
+            }
+        });
+    </script>
 </body>
-</html>
