@@ -1,2 +1,2 @@
-# mi-radio-pwa
+# radiocero971
 radio ceo 97.1
